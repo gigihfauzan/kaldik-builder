@@ -1,0 +1,36 @@
+@media print {
+  .no-print,
+  .sidebar { display: none !important; }
+
+  body { background: #fff; }
+  .app-shell { display: block; }
+  .preview-area { padding: 0; }
+  .print-root { background: none; padding: 0; }
+
+  .print-page {
+    box-shadow: none;
+    border-radius: 0;
+    max-width: none;
+    page-break-after: always;
+    break-after: page;
+  }
+}
+
+body[data-paper="f4"] {
+  --page-w: 21.5cm;
+  --page-h: 33cm;
+}
+
+body[data-paper="a4"] {
+  --page-w: 21cm;
+  --page-h: 29.7cm;
+}
+
+@page {
+  size: var(--page-w) var(--page-h);
+  margin: var(--m-top, 1.5cm) var(--m-right, 1.5cm) var(--m-bottom, 1.5cm) var(--m-left, 1.5cm);
+}
+
+body[data-orient="landscape"] @page {
+  size: var(--page-h) var(--page-w);
+}
