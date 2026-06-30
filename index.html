@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Kaldik Builder</title>
+
+    <!-- Font -->
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet"
+          href="css/style.css">
+
+    <link rel="stylesheet"
+          href="css/dashboard.css">
+
+    <link rel="stylesheet"
+          href="css/calendar.css">
+
+    <link rel="stylesheet"
+          href="css/theme.css">
+
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <i class="fa-solid fa-calendar-days"></i>
+
+            <h2>Kaldik Builder</h2>
+
+        </div>
+
+        <nav>
+
+            <ul>
+
+                <li class="active">
+                    <i class="fa-solid fa-house"></i>
+                    Dashboard
+                </li>
+
+                <li>
+                    <i class="fa-solid fa-school"></i>
+                    Profil Sekolah
+                </li>
+
+                <li>
+                    <i class="fa-solid fa-calendar"></i>
+                    Kalender Pendidikan
+                </li>
+
+                <li>
+                    <i class="fa-solid fa-star"></i>
+                    Hari Libur
+                </li>
+
+                <li>
+                    <i class="fa-solid fa-palette"></i>
+                    Tampilan
+                </li>
+
+                <li>
+                    <i class="fa-solid fa-print"></i>
+                    Preview & Cetak
+                </li>
+
+                <li>
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Export PDF
+                </li>
+
+                <li>
+                    <i class="fa-solid fa-gear"></i>
+                    Pengaturan
+                </li>
+
+            </ul>
+
+        </nav>
+
+    </aside>
+
+    <!-- MAIN -->
+
+    <main class="main-content">
+
+        <!-- HEADER -->
+
+        <header class="topbar">
+
+            <div>
+
+                <h1>Kalender Pendidikan</h1>
+
+                <p>Aplikasi Penyusun Kalender Pendidikan Dinamis</p>
+
+            </div>
+
+            <div class="top-action">
+
+                <button id="saveBtn">
+
+                    <i class="fa-solid fa-floppy-disk"></i>
+
+                    Simpan
+
+                </button>
+
+            </div>
+
+        </header>
+
+        <!-- DASHBOARD -->
+
+        <section class="dashboard-grid">
+
+            <!-- PROFIL -->
+
+            <div class="card">
+
+                <h3>
+
+                    <i class="fa-solid fa-school"></i>
+
+                    Profil Sekolah
+
+                </h3>
+
+                <div class="form-group">
+
+                    <label>Nama Sekolah</label>
+
+                    <input type="text"
+                           id="schoolName"
+                           placeholder="SMP Negeri ...">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Tahun Ajaran</label>
+
+                    <input type="text"
+                           id="schoolYear"
+                           placeholder="2026 / 2027">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Logo Sekolah</label>
+
+                    <input type="file"
+                           id="logo">
+
+                </div>
+
+            </div>
+
+            <!-- KEPALA SEKOLAH -->
+
+            <div class="card">
+
+                <h3>
+
+                    <i class="fa-solid fa-user-tie"></i>
+
+                    Kepala Sekolah
+
+                </h3>
+
+                <div class="form-group">
+
+                    <label>Nama Kepala Sekolah</label>
+
+                    <input type="text"
+                           id="principal">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>NIP</label>
+
+                    <input type="text"
+                           id="nip">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Upload Tanda Tangan</label>
+
+                    <input type="file"
+                           id="signature">
+
+                </div>
+
+            </div>
+
+            <!-- SEMESTER -->
+
+            <div class="card">
+
+                <h3>
+
+                    <i class="fa-solid fa-calendar-week"></i>
+
+                    Semester 1
+
+                </h3>
+
+                <div class="form-group">
+
+                    <label>Tanggal Mulai</label>
+
+                    <input type="date"
+                           id="semester1Start">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Tanggal Selesai</label>
+
+                    <input type="date"
+                           id="semester1End">
+
+                </div>
+
+            </div>
+
+            <div class="card">
+
+                <h3>
+
+                    <i class="fa-solid fa-calendar-week"></i>
+
+                    Semester 2
+
+                </h3>
+
+                <div class="form-group">
+
+                    <label>Tanggal Mulai</label>
+
+                    <input type="date"
+                           id="semester2Start">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Tanggal Selesai</label>
+
+                    <input type="date"
+                           id="semester2End">
+
+                </div>
+
+            </div>
+
+            <!-- KERTAS -->
+
+            <div class="card">
+
+                <h3>
+
+                    <i class="fa-solid fa-file"></i>
+
+                    Pengaturan Cetak
+
+                </h3>
+
+                <div class="form-group">
+
+                    <label>Ukuran Kertas</label>
+
+                    <select id="paperSize">
+
+                        <option value="F4">F4</option>
+
+                        <option value="A4">A4</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label>Orientasi</label>
+
+                    <select id="orientation">
+
+                        <option value="portrait">Portrait</option>
+
+                        <option value="landscape">Landscape</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <!-- MARGIN -->
+
+            <div class="card">
+
+                <h3>
+
+                    <i class="fa-solid fa-ruler"></i>
+
+                    Margin
+
+                </h3>
+
+                <div class="margin-grid">
+
+                    <input type="number"
+                           placeholder="Atas (mm)"
+                           id="marginTop">
+
+                    <input type="number"
+                           placeholder="Bawah (mm)"
+                           id="marginBottom">
+
+                    <input type="number"
+                           placeholder="Kiri (mm)"
+                           id="marginLeft">
+
+                    <input type="number"
+                           placeholder="Kanan (mm)"
+                           id="marginRight">
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- WORKSPACE -->
+
+        <section class="workspace">
+
+            <div class="workspace-header">
+
+                <h2>
+
+                    Preview Kalender
+
+                </h2>
+
+                <button id="generateCalendar">
+
+                    <i class="fa-solid fa-calendar-plus"></i>
+
+                    Generate Kalender
+
+                </button>
+
+            </div>
+
+            <div id="calendarPreview">
+
+                <div class="empty">
+
+                    <i class="fa-solid fa-calendar-days"></i>
+
+                    <h3>
+
+                        Preview Kalender Akan Muncul di Sini
+
+                    </h3>
+
+                    <p>
+
+                        Isi data sekolah kemudian tekan
+                        <b>Generate Kalender</b>
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- SCRIPT -->
+
+    <script src="js/helper.js"></script>
+
+    <script src="js/calendar.js"></script>
+
+    <script src="js/app.js"></script>
+
+</body>
+
+  </html>
