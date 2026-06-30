@@ -6,26 +6,13 @@
     <title>Generator Kalender Pendidikan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Pengaturan Khusus untuk Cetak */
         @media print {
             body { background: white; }
-            .no-print { display: none; } /* Sembunyikan panel kontrol saat cetak */
-            
-            /* Simulasi Ukuran Kertas F4 */
-            @page {
-                size: 21.5cm 33cm;
-                margin: 1.5cm;
-            }
-
-            .paper-container {
-                box-shadow: none !important;
-                margin: 0 !important;
-                width: 100% !important;
-                height: auto !important;
-            }
+            .no-print { display: none; }
+            @page { size: 21.5cm 33cm; margin: 1.5cm; }
+            .paper-container { box-shadow: none !important; margin: 0 !important; width: 100% !important; }
         }
 
-        /* Simulasi Kertas di Layar */
         .paper-container {
             width: 21.5cm;
             min-height: 33cm;
@@ -35,45 +22,36 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        /* Grid Layout untuk Bulan */
-        .calendar-grid-portrait {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
+        /* Grid Dinamis */
+        .grid-portrait { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .grid-landscape { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
 
-        .calendar-grid-landscape {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem; /* Ukuran kecil agar muat banyak */
-        }
-
-        th, td {
-            border: 1px solid #000;
-            text-align: center;
-            padding: 2px;
-        }
-
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+        th, td { border: 1px solid #000; text-align: center; padding: 2px; height: 22px; }
         .day-name { background-color: #f3f4f6; font-weight: bold; }
+        .weekend { color: red; } /* Contoh untuk hari Minggu */
     </style>
 </head>
 <body class="bg-gray-200 font-sans">
 
-    <!-- PANEL KONTROL (Akan hilang saat diprint) -->
-    <div class="no-print bg-white p-6 shadow-md sticky top-0 z-50 flex gap-4 items-center">
-        <h2 class="font-bold text-lg">Control Panel:</h2>
-        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Cetak Kalender</button>
-        <button onclick="toggleLayout()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Switch Portrait/Landscape</button>
-        <p class="text-sm text-gray-500 italic">*Gunakan tombol di atas untuk simulasi layout</p>
+    <!-- PANEL KONTROL -->
+    <div class="no-print bg-white p-6 shadow-md sticky top-0 z-50 flex flex-wrap gap-4 items-center">
+        <div>
+            <label class="block text-xs font-bold">Tahun Ajaran</label>
+            <input type="text" id="inputYear" value="2024/2025" class="border p-1 text-sm">
+        </div>
+        <div>
+            <label class="block text-xs font-bold">Nama Sekolah</label>
+            <input type="text" id="inputSchool" value="SMP NEGERI 1 CONTOH" class="border p-1 text-sm">
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button onclick="generateCalendar()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm font-bold">Update Kalender</button>
+            <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-bold">Cetak</button>
+            <button onclick="toggleLayout()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm">Switch Layout</button>
+        </div>
     </div>
 
-    <!-- AREA KERTAS (Simulasi F4) -->
+    <!-- AREA KERTAS -->
     <div id="printableArea" class="paper-container">
         
         <!-- HEADER -->
@@ -84,13 +62,84 @@
         </div>
 
         <!-- GRID BULAN -->
-        <div id="calendarGrid" class="calendar-grid-portrait">
-            <!-- Kita akan men-generate bulan menggunakan JavaScript nantinya -->
-            <!-- Contoh 1 Bulan -->
-            <div class="month-box">
+        <div id="calendarGrid" class="grid-portrait">
+            <!-- Diisi oleh JavaScript -->
+        </div>
+
+        <!-- KETERANGAN & TANDA TANGAN -->
+        <div class="mt-8 flex justify-between items-end">
+            <div class="w-2/3">
+                <h4 class="font-bold text-sm mb-2 border-b pb-1">Keterangan Libur & Kegiatan:</h4>
+                <ul id="holidayList" class="text-xs space-y-1">
+                    <!-- Diisi oleh JavaScript -->
+                    <li>(Belum ada data libur)</li>
+                </ul>
+            </div>
+
+            <div class="w-1/3 text-center">
+                <p class="text-xs mb-12">Mengetahui,<br>Kepala Sekolah</p>
+                <p class="font-bold text-sm underline" id="displayPrincipal">NAMA KEPALA SEKOLAH, S.Pd</p>
+                <p class="text-xs" id="displayNip">NIP. 1987654321001</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Konfigurasi Awal
+        const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        
+        // State Data (Nantinya ini akan diambil dari Firebase)
+        let currentData = {
+            year: 2024, // Tahun dasar untuk kalkulasi
+            holidays: [
+                { date: "2024-01-01", label: "Tahun Baru Masehi", color: "bg-red-500" },
+                { date: "2024-04-10", label: "Libur Idul Fitri", color: "bg-green-500", range: true, end: "2024-04-15" }
+            ]
+        };
+
+        function toggleLayout() {
+            const grid = document.getElementById('calendarGrid');
+            grid.classList.toggle('grid-portrait');
+            grid.classList.toggle('grid-landscape');
+        }
+
+        function generateCalendar() {
+            // Update Header dari Input
+            document.getElementById('displaySchool').innerText = document.getElementById('inputSchool').value;
+            document.getElementById('displayYear').innerText = "Tahun Ajaran " + document.getElementById('inputYear').value;
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = ''; // Bersihkan grid
+
+            // Kita generate 12 bulan
+            // Catatan: Untuk sekolah, biasanya 1 tahun ajaran dimulai dari Juli. 
+            // Tapi untuk kemudahan demo, kita mulai dari Januari.
+            for (let m = 0; m < 12; m++) {
+                grid.appendChild(createMonthTable(m, currentData.year));
+            }
+            
+            updateHolidayList();
+        }
+
+        function createMonthTable(monthIndex, year) {
+            const monthDiv = document.createElement('div');
+            monthDiv.className = "month-box";
+
+            const firstDay = new Date(year, monthIndex, 1).getDay(); // 0 (Sun) to 6 (Sat)
+            const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+            
+            // Hitung Hari Efektif (Senin-Jumat) sederhana
+            let effectiveDays = 0;
+            for(let d=1; d<=daysInMonth; d++) {
+                let dayOfWeek = new Date(year, monthIndex, d).getDay();
+                if(dayOfWeek !== 0 && dayOfWeek !== 6) effectiveDays++;
+            }
+
+            // Header Bulan
+            monthDiv.innerHTML = `
                 <div class="flex justify-between items-end mb-1">
-                    <span class="font-bold uppercase text-sm">Januari</span>
-                    <span class="text-[10px]">Eff: 22 Hari</span>
+                    <span class="font-bold uppercase text-xs">${months[monthIndex]}</span>
+                    <span class="text-[9px]">Eff: ${effectiveDays} Hari</span>
                 </div>
                 <table>
                     <thead>
@@ -98,57 +147,123 @@
                             <th>S</th><th>S</th><th>R</th><th>K</th><th>J</th><th>S</th><th>M</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
-                        <tr><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td></tr>
-                        <tr><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td><td>20</td><td>21</td></tr>
-                        <tr><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td></tr>
-                        <tr><td>29</td><td>30</td><td>31</td><td></td><td></td><td></td><td></td></tr>
-                        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                    </tbody>
+                    <tbody id="body-${monthIndex}"></tbody>
                 </table>
-            </div>
-            <!-- End Contoh -->
-        </div>
+            `;
 
-        <!-- KETERANGAN LIBUR -->
-        <div class="mt-8 flex justify-between items-start">
-            <div class="w-2/3">
-                <h4 class="font-bold text-sm mb-2 border-b pb-1">Keterangan Libur & Kegiatan:</h4>
-                <ul class="text-xs space-y-1">
-                    <li class="flex items-center gap-2">
-                        <span class="w-3 h-3 bg-red-500 rounded-full"></span>
-                        <span>01 Jan : Tahun Baru Masehi</span>
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <span class="w-3 h-3 bg-green-500 rounded-full"></span>
-                        <span>10-12 Jan : Libur Semester</span>
-                    </li>
-                </ul>
-            </div>
+            const tbody = monthDiv.querySelector('tbody');
+            
+            // Logika membuat baris kalender
+            let date = 1;
+            // Kita buat 6 baris agar rapih sesuai permintaanmu
+            for (let i = 0; i < 6; i++) {
+                const tr = document.createElement('tr');
+                
+                // Loop 7 hari dalam seminggu
+                for (let j = 0; j < 7; j++) {
+                    const td = document.createElement('td');
+                    
+                    // Penyesuaian hari pertama bulan
+                    // JavaScript: Sun=0, Mon=1...
+                    // Kita mau urutan: S, S, R, K, J, S, M (Senin=1, Minggu=0)
+                    // Jadi kita mapping: index 0 (Senin) -> JS Day 1
+                    
+                    // Logika sederhana:
+                    // Jika ini baris pertama dan hari ini kurang dari offset hari pertama
+                    // (Tergantung apakah kita mulai dari Senin atau Minggu)
+                    
+                    // Mari kita asumsikan kolom 0 adalah Senin (JS Day 1)
+                    // Maka kita perlu shift.
+                    
+                    // Logic: Jika j=0 (Senin), kita cek apakah tanggal harusnya sudah muncul
+                    // Ini agak tricky, mari kita gunakan pendekatan array padding
+                    
+                    // (Sederhananya untuk demo, kita buat agar tanggal muncul di kolom yang benar)
+                    // ... (Logika penempatan tanggal)
+                    
+                    tr.appendChild(td);
+                }
+                // Untuk sake of simplicity dalam demo ini, saya gunakan loop tanggal standar
+                // yang lebih robust di bawah ini:
+                tbody.appendChild(tr);
+            }
+            
+            // RE-WRITE: Cara yang lebih bersih untuk mengisi tabel
+            fillTable(tbody, monthIndex, year, firstDay, daysInMonth);
 
-            <!-- TANDA TANGAN -->
-            <div class="w-1/3 text-center">
-                <p class="text-xs mb-12">Mengetahui,<br>Kepala Sekolah</p>
-                <p class="font-bold text-sm underline">NAMA KEPALA SEKOLAH, S.Pd</p>
-                <p class="text-xs">NIP. 1987654321001</p>
-            </div>
-        </div>
+            return monthDiv;
+        }
 
-    </div>
+        function fillTable(tbody, monthIndex, year, firstDay, daysInMonth) {
+            tbody.innerHTML = '';
+            // Mapping: Senin=1, Selasa=2... Minggu=0
+            // JS: Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
+            // Target kita: S(1), S(2), R(3), K(4), J(5), S(6), M(0)
+            // Kita perlu geser agar index 0 adalah Senin.
+            
+            // Shift: Jika pertama adalah Minggu (0), dia jadi index 6.
+            // Jika pertama adalah Senin (1), dia jadi index 0.
+            let startOffset = firstDay === 0 ? 6 : firstDay - 1;
 
-    <script>
-        // Fungsi untuk mengubah layout secara visual (untuk demo)
-        function toggleLayout() {
-            const grid = document.getElementById('calendarGrid');
-            if (grid.classList.contains('calendar-grid-portrait')) {
-                grid.classList.remove('calendar-grid-portrait');
-                grid.classList.add('calendar-grid-landscape');
-            } else {
-                grid.classList.remove('calendar-grid-landscape');
-                grid.classList.add('calendar-grid-portrait');
+            let daysArray = new Array(startOffset).fill(null);
+            for (let d = 1; d <= daysInMonth; d++) {
+                daysArray.push(d);
+            }
+
+            // Buat baris (maksimal 6 baris)
+            for (let i = 0; i < 42; i += 7) {
+                const tr = document.createElement('tr');
+                for (let j = 0; j < 7; j++) {
+                    const td = document.createElement('td');
+                    const dayVal = daysArray[i + j];
+                    
+                    if (dayVal) {
+                        td.innerText = dayVal;
+                        // Tandai Minggu sebagai merah
+                        let currentDayOfWeek = new Date(year, monthIndex, dayVal).getDay();
+                        if (currentDayOfWeek === 0) td.classList.add('weekend');
+                        
+                        // Cek apakah tanggal ini masuk dalam daftar libur
+                        checkHoliday(td, year, monthIndex, dayVal);
+                    }
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+                if (i + 7 >= daysArray.length) break; 
             }
         }
+
+        function checkHoliday(td, year, month, day) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            currentData.holidays.forEach(h => {
+                if (h.date === dateStr) {
+                    td.classList.add(h.color);
+                    td.style.color = 'white';
+                }
+                // Handle range (sangat sederhana untuk demo)
+                if (h.range && h.end) {
+                    const endDateStr = h.end;
+                    if (dateStr >= h.date && dateStr <= endDateStr) {
+                        td.classList.add(h.color);
+                        td.style.color = 'white';
+                    }
+                }
+            });
+        }
+
+        function updateHolidayList() {
+            const list = document.getElementById('holidayList');
+            list.innerHTML = '';
+            currentData.holidays.forEach(h => {
+                const li = document.createElement('li');
+                li.className = "flex items-center gap-2";
+                li.innerHTML = `<span class="w-3 h-3 ${h.color} rounded-full"></span> <span>${h.date} : ${h.label}</span>`;
+                list.appendChild(li);
+            });
+        }
+
+        // Inisialisasi saat load
+        window.onload = generateCalendar;
     </script>
 </body>
 </html>
