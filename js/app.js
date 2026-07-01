@@ -4,7 +4,7 @@ function el(id) {
   return document.getElementById(id);
 }
 
-let state = {
+const defaultState = () => ({
   schoolName: "SMP NEGERI 1 CONTOH",
   tahunAjaran: "2025/2026",
   kepalaSekolah: "Nama Kepala Sekolah, S.Pd.",
@@ -19,20 +19,39 @@ let state = {
   orientation: "portrait",
   margins: { top: 1.5, right: 1.5, bottom: 1.5, left: 1.5 },
   weekendLibur: true,
-};
+});
+
+let state = defaultState();
 
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {}
 }
 
 function load() {
   try {
-    const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (p) state = Object.assign(state, p);
-  } catch (e) {}
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    const d = defaultState();
+    state = {
+      ...d,
+      ...p,
+      semesters: {
+        1: { ...d.semesters[1], ...(p.semesters && p.semesters[1]) },
+        2: { ...d.semesters[2], ...(p.semesters && p.semesters[2]) },
+      },
+      margins: { ...d.margins, ...(p.margins || {}) },
+      markers: Array.isArray(p.markers) ? p.markers : [],
+    };
+  } catch (e) {
+    state = defaultState();
+  }
 }
 
 function readForm() {
+  if (!el("schoolName")) return;
   state.schoolName = el("schoolName").value;
   state.tahunAjaran = el("tahunAjaran").value;
   state.kepalaSekolah = el("kepalaSekolah").value;
@@ -45,16 +64,17 @@ function readForm() {
   state.paperSize = el("paperSize").value;
   state.orientation = el("printOrientation").value;
   state.margins = {
-    top: +el("marginTop").value,
-    right: +el("marginRight").value,
-    bottom: +el("marginBottom").value,
-    left: +el("marginLeft").value,
+    top: +el("marginTop").value || 1.5,
+    right: +el("marginRight").value || 1.5,
+    bottom: +el("marginBottom").value || 1.5,
+    left: +el("marginLeft").value || 1.5,
   };
   state.weekendLibur = el("weekendLibur").checked;
   save();
 }
 
 function fillForm() {
+  if (!el("schoolName")) return;
   el("schoolName").value = state.schoolName;
   el("tahunAjaran").value = state.tahunAjaran;
   el("kepalaSekolah").value = state.kepalaSekolah;
@@ -85,21 +105,21 @@ function applyPrintVars() {
 
 function renderMarkers() {
   const ul = el("markerList");
+  if (!ul) return;
   ul.innerHTML = "";
   state.markers.forEach((m, i) => {
     const li = document.createElement("li");
     const sw = document.createElement("span");
     sw.className = "sw";
-    sw.style.background = m.color;
+    sw.style.background = m.color || "#ccc";
     li.appendChild(sw);
     li.appendChild(
       document.createTextNode(
-        ` ${m.icon || ""} \( {m.label} ( \){m.start}${
-          m.end && m.end !== m.start ? "–" + m.end : ""
-        }) `
+        ` ${m.icon || ""} \( {m.label} ( \){m.start}${m.end && m.end !== m.start ? "–" + m.end : ""}) `
       )
     );
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = "Hapus";
     btn.onclick = () => {
       state.markers.splice(i, 1);
@@ -113,81 +133,144 @@ function renderMarkers() {
 }
 
 function preview() {
+  const root = el("printRoot");
+  if (!root) return;
+
   readForm();
   applyPrintVars();
-  el("printRoot").innerHTML = window.CalendarEngine.renderAll(state);
+
+  if (!window.CalendarEngine || typeof window.CalendarEngine.renderAll !== "function") {
+    root.innerHTML =
+      '<p class="error-hint"><strong>Pratinjau tidak bisa dirender.</strong><br>' +
+      "File <code>js/calendar-engine.js</code> tidak termuat (404 atau error sintaks).<br>" +
+      "Buka F12 → Console / Network, lalu pastikan semua file JS status 200.</p>";
+    return;
+  }
+
+  try {
+    const html = window.CalendarEngine.renderAll(state);
+    root.innerHTML = html || '<p class="error-hint">Hasil render kosong. Isi tanggal Semester 1 & 2.</p>';
+  } catch (err) {
+    console.error(err);
+    root.innerHTML =
+      '<p class="error-hint"><strong>Error JavaScript:</strong> ' +
+      (err.message || err) +
+      "<br>Periksa tanggal semester dan data impor JSON.</p>";
+  }
 }
 
-document.querySelectorAll(".tab").forEach((t) => {
-  t.onclick = () => {
-    document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach((x) => x.classList.remove("active"));
-    t.classList.add("active");
-    document.querySelector(`[data-panel="${t.dataset.tab}"]`).classList.add("active");
-  };
-});
-
-el("btnAddMarker").onclick = () => {
-  const label = el("markerLabel").value.trim();
-  const start = el("markerStart").value;
-  if (!label || !start) return alert("Isi label dan tanggal");
-  state.markers.push({
-    id: crypto.randomUUID(),
-    label,
-    color: el("markerColor").value,
-    icon: el("markerIcon").value.trim(),
-    start,
-    end: el("markerEnd").value || start,
-    libur: el("markerLibur").checked,
-    semester: el("markerSemester").value,
+function setupTabs() {
+  document.querySelectorAll(".tab").forEach((t) => {
+    t.onclick = () => {
+      document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((x) => x.classList.remove("active"));
+      t.classList.add("active");
+      const panel = document.querySelector('[data-panel="' + t.dataset.tab + '"]');
+      if (panel) panel.classList.add("active");
+    };
   });
-  save();
+}
+
+function setupButtons() {
+  if (el("btnAddMarker")) {
+    el("btnAddMarker").onclick = () => {
+      const label = el("markerLabel").value.trim();
+      const start = el("markerStart").value;
+      if (!label || !start) return alert("Isi label dan tanggal");
+      const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+      state.markers.push({
+        id,
+        label,
+        color: el("markerColor").value,
+        icon: el("markerIcon").value.trim(),
+        start,
+        end: el("markerEnd").value || start,
+        libur: el("markerLibur").checked,
+        semester: el("markerSemester").value,
+      });
+      save();
+      renderMarkers();
+      preview();
+    };
+  }
+
+  if (el("btnLoadLiburNasional")) {
+    el("btnLoadLiburNasional").onclick = () => {
+      readForm();
+      if (window.LiburNasionalID && LiburNasionalID.toMarkers) {
+        state.markers = state.markers.concat(LiburNasionalID.toMarkers(state.tahunAjaran));
+        save();
+        renderMarkers();
+        preview();
+      } else {
+        alert("File holidays-id.js belum termuat.");
+      }
+    };
+  }
+
+  if (el("btnPreview")) el("btnPreview").onclick = preview;
+  if (el("btnPrint")) {
+    el("btnPrint").onclick = () => {
+      preview();
+      window.print();
+    };
+  }
+  if (el("btnExport")) {
+    el("btnExport").onclick = () => {
+      readForm();
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "kalender-pendidikan.json";
+      a.click();
+    };
+  }
+  if (el("importFile")) {
+    el("importFile").onchange = (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const p = JSON.parse(r.result);
+          const d = defaultState();
+          state = {
+            ...d,
+            ...p,
+            semesters: {
+              1: { ...d.semesters[1], ...(p.semesters && p.semesters[1]) },
+              2: { ...d.semesters[2], ...(p.semesters && p.semesters[2]) },
+            },
+            margins: { ...d.margins, ...(p.margins || {}) },
+            markers: Array.isArray(p.markers) ? p.markers : [],
+          };
+          save();
+          fillForm();
+          renderMarkers();
+          preview();
+        } catch (err) {
+          alert("JSON tidak valid");
+        }
+      };
+      r.readAsText(f);
+    };
+  }
+  if (el("toggleSidebar")) {
+    el("toggleSidebar").onclick = () => el("sidebar").classList.toggle("collapsed");
+  }
+}
+
+function init() {
+  load();
+  fillForm();
+  setupTabs();
+  setupButtons();
   renderMarkers();
   preview();
-};
+}
 
-el("btnLoadLiburNasional").onclick = () => {
-  readForm();
-  if (window.LiburNasionalID && LiburNasionalID.toMarkers) {
-    state.markers = state.markers.concat(LiburNasionalID.toMarkers(state.tahunAjaran));
-    save();
-    renderMarkers();
-    preview();
-  }
-};
-
-el("btnPreview").onclick = preview;
-el("btnPrint").onclick = () => {
-  preview();
-  window.print();
-};
-
-el("btnExport").onclick = () => {
-  readForm();
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "kalender-pendidikan.json";
-  a.click();
-};
-
-el("importFile").onchange = (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    state = JSON.parse(r.result);
-    save();
-    fillForm();
-    renderMarkers();
-    preview();
-  };
-  r.readAsText(f);
-};
-
-el("toggleSidebar").onclick = () => el("sidebar").classList.toggle("collapsed");
-
-load();
-fillForm();
-renderMarkers();
-preview();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
