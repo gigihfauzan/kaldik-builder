@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generator Kalender Pendidikan</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="flex h-screen overflow-hidden relative">
@@ -25,6 +23,7 @@
         </div>
         
         <div class="p-5 flex-grow space-y-4">
+            
             <div class="bg-yellow-50 p-3 rounded border border-yellow-200">
                 <h3 class="font-semibold text-sm mb-2 text-yellow-700"><i class="fas fa-print mr-1"></i> Layout & Kertas</h3>
                 <div class="flex gap-2">
@@ -47,10 +46,22 @@
                 <div class="mt-3">
                     <label class="block text-xs font-semibold mb-1 text-gray-700">Margin Kertas (mm)</label>
                     <div class="grid grid-cols-4 gap-1">
-                        <div><input type="number" id="margin-top" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Atas"><p class="text-[9px] text-center text-gray-500 mt-0.5">Atas</p></div>
-                        <div><input type="number" id="margin-right" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Kanan"><p class="text-[9px] text-center text-gray-500 mt-0.5">Kanan</p></div>
-                        <div><input type="number" id="margin-bottom" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Bawah"><p class="text-[9px] text-center text-gray-500 mt-0.5">Bawah</p></div>
-                        <div><input type="number" id="margin-left" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Kiri"><p class="text-[9px] text-center text-gray-500 mt-0.5">Kiri</p></div>
+                        <div>
+                            <input type="number" id="margin-top" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Atas">
+                            <p class="text-[9px] text-center text-gray-500 mt-0.5">Atas</p>
+                        </div>
+                        <div>
+                            <input type="number" id="margin-right" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Kanan">
+                            <p class="text-[9px] text-center text-gray-500 mt-0.5">Kanan</p>
+                        </div>
+                        <div>
+                            <input type="number" id="margin-bottom" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Bawah">
+                            <p class="text-[9px] text-center text-gray-500 mt-0.5">Bawah</p>
+                        </div>
+                        <div>
+                            <input type="number" id="margin-left" value="10" class="w-full border p-1 rounded text-xs text-center focus:ring focus:ring-yellow-200" title="Margin Kiri">
+                            <p class="text-[9px] text-center text-gray-500 mt-0.5">Kiri</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -96,36 +107,43 @@
                             <input type="date" id="event-start-date" class="w-full border p-2 rounded text-sm">
                         </div>
                         <div class="w-1/2">
-                            <label class="block text-[10px] font-semibold mb-1 text-gray-600">Sampai</label>
-                            <input type="date" id="event-end-date" class="w-full border p-2 rounded text-sm">
+                            <label class="block text-[10px] font-semibold mb-1 text-gray-600">Sampai (Opsional)</label>
+                            <input type="date" id="event-end-date" class="w-full border p-2 rounded text-sm" title="Kosongkan jika hanya 1 hari">
                         </div>
                     </div>
+                    
                     <input type="text" id="event-desc" placeholder="Keterangan Kegiatan..." class="w-full border p-2 rounded text-sm">
+                    
                     <label class="flex items-center gap-2 text-xs cursor-pointer text-gray-700">
                         <input type="checkbox" id="event-is-holiday" checked class="rounded text-blue-600">
-                        <span>Hitung sebagai Libur</span>
+                        <span>Hitung sebagai Libur (Kurangi Hari Efektif)</span>
                     </label>
+
                     <div class="flex gap-2 mt-2">
-                        <input type="color" id="event-color" value="#10b981" class="w-10 h-10 border p-1 rounded cursor-pointer">
+                        <input type="color" id="event-color" value="#10b981" class="w-10 h-10 border p-1 rounded cursor-pointer" title="Warna Penanda">
                         <button onclick="window.addEvent()" class="bg-blue-600 text-white flex-grow rounded text-sm font-semibold hover:bg-blue-700 transition">Tambahkan</button>
                     </div>
                 </div>
             </div>
 
-            <div id="event-list-sidebar" class="text-xs space-y-1 max-h-32 overflow-y-auto"></div>
+            <div id="event-list-sidebar" class="text-xs space-y-1 max-h-32 overflow-y-auto">
+                </div>
         </div>
 
         <div class="p-4 border-t space-y-2 bg-gray-50">
             <button onclick="window.exportToExcel()" class="w-full bg-emerald-700 text-white p-2 rounded font-bold hover:bg-emerald-800 transition flex items-center justify-center text-sm shadow-md">
                 <i class="fas fa-file-excel mr-2"></i> Export ke Excel (.xlsx)
             </button>
+            
             <button onclick="window.print()" class="w-full bg-green-600 text-white p-3 rounded font-bold hover:bg-green-700 transition flex items-center justify-center shadow-lg">
                 <i class="fas fa-print mr-2"></i> Cetak Kalender
             </button>
+            <p class="text-[10px] text-gray-500 text-center">Pastikan pengaturan <b>Paper Size</b> dan <b>Layout</b> pada dialog print komputer Anda disamakan dengan pengaturan di atas.</p>
         </div>
     </div>
 
     <div id="preview-container" class="flex-grow overflow-y-auto p-8 bg-gray-200">
+        
         <div id="page-sem1" class="page portrait">
             <div class="text-center header-section">
                 <h1 class="font-bold uppercase tracking-wider">KALENDER PENDIDIKAN</h1>
@@ -133,14 +151,23 @@
                 <h3 class="font-semibold" id="title-year-1">TAHUN AJARAN 2026/2027</h3>
                 <h4 class="font-semibold bg-gray-800 text-white rounded">SEMESTER 1 (GANJIL)</h4>
             </div>
-            <div id="grid-sem1" class="month-grid"></div>
+
+            <div id="grid-sem1" class="month-grid">
+                </div>
+
             <div class="footer-container">
                 <div class="legend-container border border-gray-400 p-2 text-xs rounded">
-                    <h5 class="font-bold mb-1 border-b border-gray-300 pb-1">Keterangan:</h5>
-                    <div id="legend-sem1" class="legend-grid grid gap-x-4 gap-y-1"></div>
+                    <h5 class="font-bold mb-1 border-b border-gray-300 pb-1">Keterangan Kegiatan / Libur:</h5>
+                    <div id="legend-sem1" class="legend-grid grid gap-x-4 gap-y-1">
+                        <span class="text-gray-400 italic">Belum ada kegiatan ditambahkan...</span>
+                    </div>
                 </div>
+                
                 <div class="ttd-section text-center text-sm flex flex-col justify-between flex-shrink-0">
-                    <div><p class="ttd-date-display">Kedungbanteng, 12 Juli 2026</p><p>Kepala Sekolah,</p></div>
+                    <div>
+                        <p class="ttd-date-display">Kedungbanteng, 12 Juli 2026</p>
+                        <p>Kepala Sekolah,</p>
+                    </div>
                     <div class="signature-space">
                         <p class="font-bold underline kepsek-name-display">Nama Kepsek, S.Pd., M.Pd.</p>
                         <p class="kepsek-nip-display">NIP. 19800101 200501 1 001</p>
@@ -156,14 +183,23 @@
                 <h3 class="font-semibold" id="title-year-2">TAHUN AJARAN 2026/2027</h3>
                 <h4 class="font-semibold bg-gray-800 text-white rounded">SEMESTER 2 (GENAP)</h4>
             </div>
-            <div id="grid-sem2" class="month-grid"></div>
-            <div class="footer-container">
-                <div class="legend-container border border-gray-400 p-2 text-xs rounded">
-                    <h5 class="font-bold mb-1 border-b border-gray-300 pb-1">Keterangan:</h5>
-                    <div id="legend-sem2" class="legend-grid grid gap-x-4 gap-y-1"></div>
+
+            <div id="grid-sem2" class="month-grid">
                 </div>
+
+             <div class="footer-container">
+                <div class="legend-container border border-gray-400 p-2 text-xs rounded">
+                    <h5 class="font-bold mb-1 border-b border-gray-300 pb-1">Keterangan Kegiatan / Libur:</h5>
+                    <div id="legend-sem2" class="legend-grid grid gap-x-4 gap-y-1">
+                        <span class="text-gray-400 italic">Belum ada kegiatan ditambahkan...</span>
+                    </div>
+                </div>
+                
                 <div class="ttd-section text-center text-sm flex flex-col justify-between flex-shrink-0">
-                    <div><p class="ttd-date-display">Kedungbanteng, 12 Juli 2026</p><p>Kepala Sekolah,</p></div>
+                    <div>
+                        <p class="ttd-date-display">Kedungbanteng, 12 Juli 2026</p>
+                        <p>Kepala Sekolah,</p>
+                    </div>
                     <div class="signature-space">
                         <p class="font-bold underline kepsek-name-display">Nama Kepsek, S.Pd., M.Pd.</p>
                         <p class="kepsek-nip-display">NIP. 19800101 200501 1 001</p>
@@ -171,6 +207,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 
     <script type="module" src="script.js"></script>
