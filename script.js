@@ -1,9 +1,8 @@
-// script.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const firebaseConfig = {
+let firebaseConfig = (typeof __firebase_config !== 'undefined') ? JSON.parse(__firebase_config) : {
     apiKey: "AIzaSyCAVt8FSDNN72OtVDjNcX060apWY7um4EI",
     authDomain: "kalender-pendidikan-ad13c.firebaseapp.com",
     projectId: "kalender-pendidikan-ad13c",
@@ -12,228 +11,234 @@ const firebaseConfig = {
     appId: "1:396729831545:web:6e4c220690f8b9fb0444a8"
 };
 
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'kalender-default';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 let currentUser = null;
-let events = [];
 let isDataLoaded = false;
-
+let events = [];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-// ==================== INIT APP ====================
-document.addEventListener("DOMContentLoaded", () => {
-    renderControlPanel();
-    renderPreviewSkeleton();
-    initAuth();
-});
+// Cloud Status
+const cloudText = document.getElementById('cloud-text');
+const cloudStatus = document.getElementById('cloud-status');
 
-// Render Control Panel
-function renderControlPanel() {
-    const panelHTML = `
-        <div class="p-5 bg-blue-600 text-white">
-            <h1 class="text-xl font-bold"><i class="fas fa-cog mr-2"></i> Pengaturan Kalender</h1>
-        </div>
-        <div class="p-5 flex-grow space-y-6 overflow-y-auto">
-            <!-- Layout -->
-            <div class="space-y-3">
-                <label class="block text-sm font-semibold">Ukuran Kertas & Orientasi</label>
-                <div class="flex gap-3">
-                    <select id="input-paper" class="flex-1 border rounded p-2 text-sm">
-                        <option value="F4">F4 (Folio)</option>
-                        <option value="A4">A4</option>
-                    </select>
-                    <select id="input-orientation" class="flex-1 border rounded p-2 text-sm">
-                        <option value="portrait">Portrait</option>
-                        <option value="landscape">Landscape</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Data Sekolah -->
-            <div>
-                <label class="block text-sm font-semibold mb-1">Nama Sekolah</label>
-                <input type="text" id="input-school" value="SMP NEGERI 2 KEDUNGBANTENG" class="w-full border p-3 rounded text-sm">
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-semibold mb-1">Tahun Mulai</label>
-                    <input type="number" id="input-year" value="2026" class="w-full border p-3 rounded text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold mb-1">Tahun Ajaran</label>
-                    <input type="text" id="display-year" value="2026/2027" readonly class="w-full border p-3 rounded bg-gray-100 text-sm">
-                </div>
-            </div>
-
-            <!-- Kepsek -->
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-sm font-semibold mb-1">Nama Kepala Sekolah</label>
-                    <input type="text" id="input-kepsek" value="Nama Kepsek, S.Pd., M.Pd." class="w-full border p-3 rounded text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold mb-1">NIP Kepala Sekolah</label>
-                    <input type="text" id="input-nip" value="19800101 200501 1 001" class="w-full border p-3 rounded text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold mb-1">Tempat & Tanggal TTD</label>
-                    <input type="text" id="input-ttd-date" value="Kedungbanteng, 12 Juli 2026" class="w-full border p-3 rounded text-sm">
-                </div>
-            </div>
-
-            <!-- Tambah Event -->
-            <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                <h3 class="font-semibold mb-3">Tambah Kegiatan / Libur</h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="date" id="event-start-date" class="border p-2 rounded">
-                    <input type="date" id="event-end-date" class="border p-2 rounded">
-                </div>
-                <input type="text" id="event-desc" placeholder="Keterangan kegiatan..." class="w-full mt-3 border p-3 rounded">
-                <div class="flex items-center gap-2 mt-3">
-                    <input type="checkbox" id="event-is-holiday" checked>
-                    <label class="text-sm">Hitung sebagai Libur</label>
-                </div>
-                <div class="flex gap-3 mt-4">
-                    <input type="color" id="event-color" value="#10b981" class="w-12 h-10 border rounded">
-                    <button onclick="addEvent()" class="flex-1 bg-blue-600 text-white py-3 rounded font-semibold">Tambahkan</button>
-                </div>
-            </div>
-
-            <div id="event-list-sidebar" class="text-xs space-y-2 max-h-52 overflow-y-auto"></div>
-        </div>
-
-        <div class="p-5 border-t bg-gray-50">
-            <button onclick="exportToExcel()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded font-bold mb-2">
-                📊 Export Excel
-            </button>
-            <button onclick="window.print()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded font-bold">
-                🖨️ Cetak Kalender
-            </button>
-        </div>
-    `;
-
-    document.getElementById("control-panel").innerHTML = panelHTML;
-    attachInputListeners();
+function setCloudStatus(status) {
+    if (status === 'saving') {
+        cloudText.innerText = "Menyimpan...";
+        cloudStatus.classList.replace('text-gray-500', 'text-blue-500');
+    } else if (status === 'saved') {
+        cloudText.innerText = "Tersimpan otomatis";
+        cloudStatus.classList.replace('text-blue-500', 'text-green-500');
+        setTimeout(() => cloudStatus.classList.replace('text-green-500', 'text-gray-500'), 2000);
+    } else if (status === 'error') {
+        cloudText.innerText = "Gagal menyimpan!";
+        cloudStatus.classList.replace('text-gray-500', 'text-red-500');
+    }
 }
 
-// Render Preview
-function renderPreviewSkeleton() {
-    const preview = document.getElementById("preview-container");
-    preview.innerHTML = `
-        <div id="page-sem1" class="page portrait mx-auto" style="width: 215mm; min-height: 330mm;">
-            <div class="text-center header-section p-4">
-                <h1 class="font-bold uppercase text-xl tracking-wider">KALENDER PENDIDIKAN</h1>
-                <h2 id="title-school-1" class="font-bold uppercase text-blue-800 mt-2"></h2>
-                <h3 id="title-year-1" class="font-semibold mt-1"></h3>
-                <h4 class="font-semibold bg-gray-800 text-white inline-block px-6 py-1 rounded mt-3">SEMESTER 1 (GANJIL)</h4>
-            </div>
-            <div id="grid-sem1" class="month-grid p-4"></div>
-            <!-- Footer akan diisi JS -->
-        </div>
-
-        <div id="page-sem2" class="page portrait mx-auto mt-8" style="width: 215mm; min-height: 330mm;">
-            <div class="text-center header-section p-4">
-                <h1 class="font-bold uppercase text-xl tracking-wider">KALENDER PENDIDIKAN</h1>
-                <h2 id="title-school-2" class="font-bold uppercase text-blue-800 mt-2"></h2>
-                <h3 id="title-year-2" class="font-semibold mt-1"></h3>
-                <h4 class="font-semibold bg-gray-800 text-white inline-block px-6 py-1 rounded mt-3">SEMESTER 2 (GENAP)</h4>
-            </div>
-            <div id="grid-sem2" class="month-grid p-4"></div>
-        </div>
-    `;
-}
-
-// ==================== AUTH & FIREBASE ====================
+// Auth & Firebase Logic
 async function initAuth() {
-    try { await signInAnonymously(auth); } catch (e) { console.error(e); }
+    try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
+        }
+    } catch (error) {
+        setCloudStatus('error');
+        if (!isDataLoaded) loadDefaultEvents();
+    }
 }
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
-        loadDefaultEvents(); // Fallback jika firestore gagal
+        loadFromFirestore();
     }
 });
 
-// ==================== EVENT LISTENERS ====================
-function attachInputListeners() {
-    const ids = ["input-school", "input-year", "input-kepsek", "input-nip", "input-ttd-date", "input-paper", "input-orientation"];
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener("input", () => {
-            debounceSave();
-            if (id === "input-school") updateHeader();
-            if (id === "input-year") updateYearAndRender();
-            if (["input-kepsek","input-nip","input-ttd-date"].includes(id)) updateSignature();
-        });
+function loadFromFirestore() {
+    if (!currentUser) return;
+    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'data');
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists() && !isDataLoaded) {
+            const data = docSnap.data();
+            document.getElementById('input-school').value = data.school || "";
+            document.getElementById('input-year').value = data.year || 2026;
+            document.getElementById('input-kepsek').value = data.kepsek || "";
+            document.getElementById('input-nip').value = data.nip || "";
+            document.getElementById('input-ttd-date').value = data.ttdDate || "";
+            document.getElementById('input-paper').value = data.paper || "F4";
+            document.getElementById('input-orientation').value = data.orientation || "portrait";
+            events = data.events || [];
+            updateLayoutConfig();
+            updateHeader();
+            updateSignature();
+            updateYearAndRender();
+            isDataLoaded = true;
+            setCloudStatus('saved');
+        } else if (!docSnap.exists() && !isDataLoaded) {
+            loadDefaultEvents();
+            isDataLoaded = true;
+            saveToFirestore();
+        }
     });
 }
 
-// ==================== UPDATE FUNCTIONS ====================
-function updateAll() {
-    updateLayoutConfig();
-    updateHeader();
-    updateSignature();
+function saveToFirestore() {
+    if (!currentUser) return;
+    const data = {
+        school: document.getElementById('input-school').value,
+        year: document.getElementById('input-year').value,
+        kepsek: document.getElementById('input-kepsek').value,
+        nip: document.getElementById('input-nip').value,
+        ttdDate: document.getElementById('input-ttd-date').value,
+        paper: document.getElementById('input-paper').value,
+        orientation: document.getElementById('input-orientation').value,
+        events: events
+    };
+    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'data');
+    setDoc(docRef, data).then(() => setCloudStatus('saved')).catch(() => setCloudStatus('error'));
+}
+
+// UI Controllers
+let saveTimeout = null;
+function debounceSave() { if (!isDataLoaded) return; setCloudStatus('saving'); clearTimeout(saveTimeout); saveTimeout = setTimeout(saveToFirestore, 1000); }
+
+window.addEvent = function() {
+    const start = document.getElementById('event-start-date').value;
+    const desc = document.getElementById('event-desc').value;
+    if(!start || !desc) return alert("Isi tanggal dan keterangan!");
+    events.push({ id: Date.now().toString(), start: start, end: document.getElementById('event-end-date').value || start, desc: desc, color: document.getElementById('event-color').value, isHoliday: document.getElementById('event-is-holiday').checked });
     updateYearAndRender();
+    debounceSave();
+}
+
+window.removeEvent = function(id) {
+    events = events.filter(e => e.id !== id);
+    updateYearAndRender();
+    debounceSave();
+}
+
+window.exportToExcel = function() {
+    let dataArr = [["KALENDER PENDIDIKAN " + document.getElementById('display-year').value], [document.getElementById('input-school').value], [], ["Tanggal Mulai", "Tanggal Selesai", "Keterangan", "Sifat"]];
+    [...events].sort((a, b) => new Date(a.start) - new Date(b.start)).forEach(e => dataArr.push([e.start, e.end, e.desc, e.isHoliday ? "Libur" : "Efektif"]));
+    const ws = XLSX.utils.aoa_to_sheet(dataArr);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Kalender");
+    XLSX.writeFile(wb, "Kalender_Pendidikan.xlsx");
 }
 
 function updateLayoutConfig() {
-    const orientation = document.getElementById("input-orientation")?.value || "portrait";
-    document.querySelectorAll(".page").forEach(page => {
-        page.classList.toggle("portrait", orientation === "portrait");
-        page.classList.toggle("landscape", orientation === "landscape");
+    const paper = document.getElementById('input-paper').value;
+    const orient = document.getElementById('input-orientation').value;
+    let width = (paper === 'F4' ? (orient === 'portrait' ? '215mm' : '330mm') : (orient === 'portrait' ? '210mm' : '297mm'));
+    let height = (paper === 'F4' ? (orient === 'portrait' ? '330mm' : '215mm') : (orient === 'portrait' ? '297mm' : '210mm'));
+    
+    let styleEl = document.getElementById('dynamic-print-style') || document.createElement('style');
+    styleEl.id = 'dynamic-print-style';
+    styleEl.innerHTML = `@media print { @page { size: ${width} ${height}; margin: 0; } }`;
+    document.head.appendChild(styleEl);
+
+    document.querySelectorAll('.page').forEach(p => {
+        p.style.width = width; p.style.height = height;
+        p.classList.toggle('landscape', orient === 'landscape');
+        p.classList.toggle('portrait', orient === 'portrait');
     });
 }
 
-function updateHeader() {
-    const school = document.getElementById("input-school")?.value || "NAMA SEKOLAH";
-    document.getElementById("title-school-1").innerText = school;
-    document.getElementById("title-school-2").innerText = school;
-}
+// Call init functions
+['input-school', 'input-year', 'input-kepsek', 'input-nip', 'input-ttd-date', 'input-paper', 'input-orientation'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => { updateLayoutConfig(); updateHeader(); updateSignature(); updateYearAndRender(); debounceSave(); });
+});
 
+function updateHeader() { const school = document.getElementById('input-school').value; document.getElementById('title-school-1').innerText = document.getElementById('title-school-2').innerText = school; }
 function updateSignature() {
-    // Bisa dikembangkan nanti
+    const name = document.getElementById('input-kepsek').value;
+    const nip = document.getElementById('input-nip').value;
+    const date = document.getElementById('input-ttd-date').value;
+    document.querySelectorAll('.kepsek-name-display').forEach(el => el.innerText = name);
+    document.querySelectorAll('.kepsek-nip-display').forEach(el => el.innerText = "NIP. " + nip);
+    document.querySelectorAll('.ttd-date-display').forEach(el => el.innerText = date);
 }
 
 function updateYearAndRender() {
-    const year = parseInt(document.getElementById("input-year")?.value) || 2026;
-    const thn = `${year}/${year + 1}`;
-    document.getElementById("display-year").value = thn;
-    document.getElementById("title-year-1").innerText = `TAHUN AJARAN ${thn}`;
-    document.getElementById("title-year-2").innerText = `TAHUN AJARAN ${thn}`;
-    renderCalendars(year, year + 1);
+    const startYear = parseInt(document.getElementById('input-year').value) || 2026;
+    const thnAjaran = `${startYear}/${startYear + 1}`;
+    document.getElementById('display-year').value = thnAjaran;
+    document.getElementById('title-year-1').innerText = document.getElementById('title-year-2').innerText = `TAHUN AJARAN ${thnAjaran}`;
+    renderCalendars(startYear, startYear + 1);
 }
 
-// ==================== KALENDER RENDERING (Minimal) ====================
-function renderCalendars(startYear, endYear) {
-    // Placeholder - bisa dikembangkan penuh nanti
-    console.log(`Rendering kalender untuk tahun ${startYear}`);
+function getEventForDate(dStr) {
+    let t = new Date(dStr).getTime();
+    return events.find(e => t >= new Date(e.start).getTime() && t <= new Date(e.end).getTime());
 }
 
-// ==================== EVENT MANAGEMENT ====================
-window.addEvent = function() {
-    alert("Fitur tambah kegiatan akan segera dilengkapi.");
-    // Tambahkan logic event disini nanti
-};
+function renderCalendars(sYear, eYear) {
+    const sem1 = document.getElementById('grid-sem1'); sem1.innerHTML = '';
+    const sem2 = document.getElementById('grid-sem2'); sem2.innerHTML = '';
+    for (let i = 6; i <= 11; i++) sem1.appendChild(generateMonthTable(i, sYear));
+    for (let i = 0; i <= 5; i++) sem2.appendChild(generateMonthTable(i, eYear));
+    renderLegends();
+    renderEventListSidebar();
+}
 
-window.exportToExcel = function() {
-    alert("Export Excel dalam pengembangan...");
-};
+function generateMonthTable(mIdx, year) {
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="flex justify-between items-center bg-gray-100 py-1 px-1 border border-gray-300 border-b-0"><span class="font-bold text-xs truncate">${monthNames[mIdx]} ${year}</span></div>`;
+    const table = document.createElement('table');
+    table.className = "calendar-table";
+    table.innerHTML = `<thead><tr><th class="sunday">M</th><th>S</th><th>S</th><th>R</th><th>K</th><th>J</th><th>S</th></tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector('tbody');
+    const firstDay = new Date(year, mIdx, 1).getDay();
+    const daysIn = new Date(year, mIdx + 1, 0).getDate();
+    let d = 1;
+    for (let i = 0; i < 6; i++) {
+        let tr = document.createElement('tr');
+        for (let j = 0; j < 7; j++) {
+            let td = document.createElement('td');
+            if ((i === 0 && j < firstDay) || d > daysIn) { } 
+            else {
+                const dateString = `${year}-${String(mIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let evt = getEventForDate(dateString);
+                td.innerHTML = `<span class="date-number ${evt ? 'bg-opacity-50' : ''}" style="${evt ? `background-color:${evt.color}; color:white; font-weight:bold;` : ''}">${d}</span>`;
+                d++;
+            }
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+    }
+    div.appendChild(table);
+    return div;
+}
 
-// Load Default
+function renderLegends() {
+    document.getElementById('legend-sem1').innerHTML = document.getElementById('legend-sem2').innerHTML = '';
+    events.sort((a, b) => new Date(a.start) - new Date(b.start)).forEach(evt => {
+        const d = new Date(evt.start);
+        const html = `<div class="flex items-start gap-1.5 text-[9px] mb-1"><div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${evt.color}"></div><span>${evt.start} : ${evt.desc}</span></div>`;
+        if (d.getMonth() >= 6) document.getElementById('legend-sem1').innerHTML += html;
+        else document.getElementById('legend-sem2').innerHTML += html;
+    });
+}
+
+function renderEventListSidebar() {
+    const list = document.getElementById('event-list-sidebar'); list.innerHTML = '';
+    events.forEach(e => {
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-start bg-white p-2 border rounded";
+        div.innerHTML = `<div class="flex items-start gap-1 text-[10px]"><div class="w-2 h-2 rounded-full mt-1" style="background-color:${e.color}"></div><div><span class="font-bold">${e.start}</span><br>${e.desc}</div></div><button onclick="window.removeEvent('${e.id}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button>`;
+        list.appendChild(div);
+    });
+}
+
 function loadDefaultEvents() {
-    events = [];
-    updateAll();
-    console.log("✅ Aplikasi Kalender siap");
+    events = [{ id: '1', start: '2026-07-13', end: '2026-07-15', desc: 'MPLS', color: '#3b82f6', isHoliday: false }];
+    updateYearAndRender();
 }
 
-// Debounce Save
-function debounceSave() {
-    console.log("💾 Perubahan disimpan (simulasi)");
-}
-
-// Global error prevention
-console.log("🚀 Script Kalender telah dimuat sepenuhnya");
+initAuth();
