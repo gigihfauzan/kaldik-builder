@@ -1,107 +1,38 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kalender Pendidikan Dinamis</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
-  <link rel="stylesheet" href="css/print.css" media="print" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Kalender Pendidikan</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <header class="sidebar-header">
-        <h1>Kalender Pendidikan</h1>
-        <p class="subtitle">Susun & cetak per semester</p>
-      </header>
+<body class="flex h-screen overflow-hidden relative">
 
-      <nav class="tabs">
-        <button type="button" class="tab active" data-tab="sekolah">Sekolah</button>
-        <button type="button" class="tab" data-tab="semester">Semester</button>
-        <button type="button" class="tab" data-tab="keterangan">Keterangan</button>
-        <button type="button" class="tab" data-tab="cetak">Cetak</button>
-      </nav>
+    <!-- Status Cloud -->
+    <div id="cloud-status" class="absolute top-4 right-4 bg-white px-3 py-1.5 rounded-full shadow-md text-xs font-semibold flex items-center gap-2 z-50 text-gray-500 border">
+        <i class="fas fa-cloud"></i> <span id="cloud-text">Cloud Terhubung</span>
+    </div>
 
-      <div class="tab-panels">
-        <section class="panel active" data-panel="sekolah">
-          <label>Nama sekolah <input id="schoolName" type="text" /></label>
-          <label>Tahun ajaran <input id="tahunAjaran" type="text" /></label>
-          <label>Kepala sekolah <input id="kepalaSekolah" type="text" /></label>
-          <label>NIP <input id="nipKepala" type="text" /></label>
-          <label>Tempat, tanggal TTD <input id="ttdTempat" type="text" /></label>
-        </section>
+    <!-- PANEL KONTROL -->
+    <div id="control-panel" class="w-80 bg-white shadow-xl flex flex-col h-full z-10 overflow-y-auto flex-shrink-0">
+        <!-- Konten panel di-load via JS atau bisa di-hardcode di HTML -->
+    </div>
 
-        <section class="panel" data-panel="semester">
-          <h3>Semester 1</h3>
-          <label>Mulai <input type="date" id="s1Start" /></label>
-          <label>Selesai <input type="date" id="s1End" /></label>
-          <h3>Semester 2</h3>
-          <label>Mulai <input type="date" id="s2Start" /></label>
-          <label>Selesai <input type="date" id="s2End" /></label>
-          <p class="hint">Satu halaman cetak per semester (maks. 6 bulan).</p>
-        </section>
+    <!-- PREVIEW AREA -->
+    <div id="preview-container" class="flex-grow overflow-y-auto p-8 bg-gray-200">
+        <!-- Halaman Semester 1 & 2 akan di-generate via JS -->
+    </div>
 
-        <section class="panel" data-panel="keterangan">
-          <label>Label <input id="markerLabel" type="text" placeholder="Libur Nasional" /></label>
-          <label>Warna <input type="color" id="markerColor" value="#e11d48" /></label>
-          <label>Simbol <input id="markerIcon" maxlength="2" placeholder="★" /></label>
-          <label>Mulai <input type="date" id="markerStart" /></label>
-          <label>Akhir <input type="date" id="markerEnd" /></label>
-          <label><input type="checkbox" id="markerLibur" checked /> Kurangi hari efektif</label>
-          <label>Semester
-            <select id="markerSemester">
-              <option value="all">Semua</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-            </select>
-          </label>
-          <button class="btn primary" id="btnAddMarker" type="button">Tambah</button>
-          <ul class="marker-list" id="markerList"></ul>
-          <button class="btn ghost" id="btnLoadLiburNasional" type="button">Muat libur nasional</button>
-        </section>
-
-        <section class="panel" data-panel="cetak">
-          <label>Kertas
-            <select id="paperSize">
-              <option value="f4">F4 (21,5 × 33 cm)</option>
-              <option value="a4">A4</option>
-            </select>
-          </label>
-          <label>Orientasi
-            <select id="printOrientation">
-              <option value="portrait">Portrait (3+3)</option>
-              <option value="landscape">Landscape (6)</option>
-            </select>
-          </label>
-          <fieldset class="margins">
-            <legend>Margin (cm)</legend>
-            <label>Atas <input type="number" id="marginTop" value="1.5" step="0.1" /></label>
-            <label>Kanan <input type="number" id="marginRight" value="1.5" step="0.1" /></label>
-            <label>Bawah <input type="number" id="marginBottom" value="1.5" step="0.1" /></label>
-            <label>Kiri <input type="number" id="marginLeft" value="1.5" step="0.1" /></label>
-          </fieldset>
-          <label><input type="checkbox" id="weekendLibur" checked /> Sabtu & Minggu libur</label>
-          <button class="btn primary" id="btnPreview" type="button">Perbarui pratinjau</button>
-          <button class="btn accent" id="btnPrint" type="button">Cetak</button>
-          <button class="btn ghost" id="btnExport" type="button">Ekspor JSON</button>
-          <label class="btn ghost">Impor JSON
-            <input type="file" id="importFile" accept="application/json" hidden />
-          </label>
-        </section>
-      </div>
-    </aside>
-
-    <main class="preview-area">
-      <div class="preview-toolbar no-print">
-        <span>Pratinjau</span>
-        <button type="button" id="toggleSidebar">Panel</button>
-      </div>
-      <div id="printRoot" class="print-root"></div>
-    </main>
-  </div>
-
-  <script src="js/holidays-id.js"></script>
-  <script src="js/app.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
