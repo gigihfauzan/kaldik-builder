@@ -5,33 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generator Kalender Pendidikan</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="flex h-screen overflow-hidden relative">
 
-    <!-- Status Cloud -->
+    <!-- Cloud Status -->
     <div id="cloud-status" class="absolute top-4 right-4 bg-white px-3 py-1.5 rounded-full shadow-md text-xs font-semibold flex items-center gap-2 z-50 text-gray-500 border">
         <i class="fas fa-cloud"></i> <span id="cloud-text">Cloud Terhubung</span>
     </div>
 
-    <!-- PANEL KONTROL -->
-    <div id="control-panel" class="w-80 bg-white shadow-xl flex flex-col h-full z-10 overflow-y-auto flex-shrink-0">
-        <!-- Konten panel di-load via JS atau bisa di-hardcode di HTML -->
-    </div>
+    <!-- Control Panel -->
+    <div id="control-panel" class="w-80 bg-white shadow-xl flex flex-col h-full z-10 overflow-y-auto flex-shrink-0"></div>
 
-    <!-- PREVIEW AREA -->
-    <div id="preview-container" class="flex-grow overflow-y-auto p-8 bg-gray-200">
-        <!-- Halaman Semester 1 & 2 akan di-generate via JS -->
-    </div>
+    <!-- Preview Container -->
+    <div id="preview-container" class="flex-grow overflow-y-auto p-8 bg-gray-200"></div>
 
     <script type="module" src="script.js"></script>
 </body>
